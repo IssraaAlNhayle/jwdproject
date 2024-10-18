@@ -1,0 +1,37 @@
+@import './base.css';
+
+/* Adjust max-width to allow full width on large screens, or remove it completely */
+#app {
+  max-width: 100%; /* Allow full width */
+  margin: 0 auto;
+  padding: 2rem;
+  font-weight: normal;
+}
+
+/* Links and green color class */
+a,
+.green {
+  text-decoration: none;
+  color: hsla(160, 100%, 37%, 1);
+  transition: 0.4s;
+  padding: 3px;
+}
+
+@media (hover: hover) {
+  a:hover {
+    background-color: hsla(160, 100%, 37%, 0.2);
+  }
+}
+
+/* Remove grid layout for large screens if it interferes with the Bootstrap layout */
+@media (min-width: 1024px) {
+  body {
+    display: flex;
+    place-items: center;
+  }
+
+  #app {
+    display: block; /* Revert grid to block to prevent interference */
+    padding: 0 2rem;
+  }
+}
