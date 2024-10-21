@@ -173,30 +173,6 @@ app.get('/session-check', (req, res) => {
         res.json({ loggedIn: false });
     }
 });
-// Route to add a book to the user's reading list
-app.post('/add-to-reading', async (req, res) => {
-    const { bookId } = req.body; // Get the bookId from the request body
-    const userId = req.session.userId; // Get the logged-in user's ID from the session
-
-    try {
-        // Check if the book is already in the reading list
-        const checkQuery = 'SELECT * FROM reading WHERE users_id = $1 AND book_id = $2';
-        const checkResult = await pool.query(checkQuery, [userId, bookId]);
-
-        if (checkResult.rows.length > 0) {
-            // Book is already in the reading list
-            console.log('Book already in the reading list');
-            return res.status(200).json({ message: 'Book already in the reading list' });
-        }
-
-        // If the book is not in the list, insert it
-        await pool.query('INSERT INTO reading (users_id, book_id) VALUES ($1, $2)', [userId, bookId]);
-        res.status(200).json({ message: 'Book added to reading list successfully' });
-    } catch (err) {
-        console.error('Error adding to reading list:', err);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
 //route to get the books in the reading list
 app.get('/reading-list', async (req, res) => {
     const userId = req.session.userId; // Get the logged-in user's ID from the session
@@ -214,6 +190,102 @@ app.get('/reading-list', async (req, res) => {
         res.status(200).json(result.rows);
     } catch (err) {
         console.error('Error fetching reading list:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+// Route to remove a book from the reading list
+app.delete('/reading-list/:bookId', async (req, res) => {
+    const { bookId } = req.params;  // Get the bookId from the request parameters
+    const userId = req.session.userId;  // Get the logged-in user's ID from the session
+
+    try {
+        // Delete the book from the reading list
+        const deleteQuery = 'DELETE FROM reading WHERE users_id = $1 AND book_id = $2';
+        const result = await pool.query(deleteQuery, [userId, bookId]);
+
+        if (result.rowCount > 0) {
+            // Book successfully removed from the reading list
+            res.status(200).json({ message: 'Book removed from reading list successfully' });
+        } else {
+            // Book not found in the reading list
+            res.status(404).json({ message: 'Book not found in the reading list' });
+        }
+    } catch (err) {
+        console.error('Error removing from reading list:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+// Route to add a book to the user's reading list
+app.post('/add-to-reading', async (req, res) => {
+    const { bookId } = req.body;
+    const userId = req.session.userId;
+
+    try {
+        // Check if the book is in the 'completed' list
+        const checkCompletedQuery = 'SELECT * FROM completed WHERE users_id = $1 AND book_id = $2';
+        const checkCompletedResult = await pool.query(checkCompletedQuery, [userId, bookId]);
+
+        if (checkCompletedResult.rows.length > 0) {
+            // Remove the book from 'completed'
+            const deleteCompletedQuery = 'DELETE FROM completed WHERE users_id = $1 AND book_id = $2';
+            await pool.query(deleteCompletedQuery, [userId, bookId]);
+            console.log('Book removed from completed list');
+        }
+
+        // Check if the book is already in the reading list
+        const checkQuery = 'SELECT * FROM reading WHERE users_id = $1 AND book_id = $2';
+        const checkResult = await pool.query(checkQuery, [userId, bookId]);
+
+        if (checkResult.rows.length > 0) {
+            return res.status(200).json({ message: 'Book already in the reading list' });
+        }
+
+        // Insert the book into the reading list
+        const insertQuery = 'INSERT INTO reading (users_id, book_id) VALUES ($1, $2)';
+        await pool.query(insertQuery, [userId, bookId]);
+
+        res.status(200).json({ message: 'Book added to reading list successfully' });
+    } catch (err) {
+        console.error('Error adding to reading list:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+app.post('/add-to-completed', async (req, res) => {
+    const { bookId } = req.body;
+    const userId = req.session.userId;
+
+    try {
+        // Insert the book into 'completed'
+        const insertQuery = 'INSERT INTO completed (users_id, book_id) VALUES ($1, $2)';
+        await pool.query(insertQuery, [userId, bookId]);
+
+        // Remove the book from the reading list after it's completed
+        const deleteQuery = 'DELETE FROM reading WHERE users_id = $1 AND book_id = $2';
+        await pool.query(deleteQuery, [userId, bookId]);
+
+        res.status(200).json({ message: 'Book added to completed list and removed from reading list' });
+    } catch (err) {
+        console.error('Error adding to completed list:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+//route to get the books in the reading list
+app.get('/completed-list', async (req, res) => {
+    const userId = req.session.userId; // Get the logged-in user's ID from the session
+    try {
+        // Query to retrieve the books from the reading list of the logged-in user
+        const query = `
+            SELECT books.id, books.title, books.author, books.image, books.bookpdf
+            FROM completed
+            JOIN books ON completed.book_id = books.id
+            WHERE completed.users_id = $1
+        `;
+        const result = await pool.query(query, [userId]);
+
+        // Return the list of books in the reading list
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Error fetching completed list:', err);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
