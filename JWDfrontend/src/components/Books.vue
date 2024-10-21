@@ -12,8 +12,11 @@
             <h5 class="card-title">{{ book.title }}</h5>
             <p class="card-text">By {{ book.author }}</p>
             <a :href="book.bookpdf" class="btn btn-primary" target="_blank">Read PDF</a>
-            <button @click="handleButtonClick(book.id)">add to Reading</button>
-            <button @click="handleButtonClick('?')">?</button>
+            <button @click="handleButtonClick(book.id)" class="btn btn-primary">add to Reading</button>
+            <!-- Heart icon for adding to favorites -->
+            <button @click="addToFavorites(book.id)" class="btn btn-favorite">
+              <i class="fas fa-heart"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -95,6 +98,22 @@ export default {
 }
 </script>
 <style scoped>
+.btn-favorite {
+  background-color: transparent;
+  border: none;
+  color: red;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.btn-favorite i {
+  transition: transform 0.2s ease-in-out;
+}
+
+.btn-favorite:hover i {
+  transform: scale(1.2);
+}
+
 .card-img-top {
   height: 200px;
   object-fit: cover;

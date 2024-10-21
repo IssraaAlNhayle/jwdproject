@@ -11,6 +11,8 @@
             <h5 class="card-title">{{ book.title }}</h5>
             <p class="card-text">By {{ book.author }}</p>
             <a :href="book.bookpdf" class="btn btn-primary" target="_blank">Read PDF</a>
+            <button class="btn btn-danger" @click="RemoveBookFromReading(book.id)">Remove from Reading</button>
+            <button class="btn btn-success" @click="AddBookToCompleted(book.id)">mark as finished</button>
           </div>
         </div>
       </div>
@@ -41,6 +43,45 @@ export default {
       this.error = err.message;
     } finally {
       this.loading = false;
+    }
+  },
+  methods: {
+    async AddBookToCompleted(bookId) {
+      try {
+        const response = await fetch(`http://localhost:3000/add-to-completed`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({bookId})
+        });
+        if (!response.ok) {
+          throw new Error('Failed to add book to completed list');
+        }
+
+        // Explicitly update the `books` array to trigger Vue's reactivity system
+        this.books = this.books.filter(book => book.id !== bookId);
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
+
+    async RemoveBookFromReading(bookId) {
+      try {
+        const response = await fetch(`http://localhost:3000/reading-list/${bookId}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to remove book from reading list');
+        }
+
+        // Explicitly update the `books` array to trigger Vue's reactivity system
+        this.books = this.books.filter(book => book.id !== bookId);
+      } catch (err) {
+        this.error = err.message;
+      }
     }
   }
 };

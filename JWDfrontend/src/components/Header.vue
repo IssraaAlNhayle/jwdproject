@@ -54,13 +54,23 @@ export default {
       const loggedIn = await this.validateSession(); // Validate session with the backend
       if (!loggedIn) {
         this.openLoginForm(); // Show login form if not logged in
-      } else {
+      }else {
         if (buttonName === 'Reading') {
+
           this.$router.push('/reading-list'); // Redirect to the reading list
+
+          console.log(`${buttonName} button clicked, and user is logged in`);
         }
-        console.log(`${buttonName} button clicked, and user is logged in`);
-      }
-    },
+else {
+
+          if (buttonName === 'Completed') {
+            this.$router.push('/completed-list');
+
+            console.log(`${buttonName} button clicked, and user is logged in`);
+          }
+        }
+}
+        },
     openLoginForm() {
       this.showLoginForm = true;
     },
