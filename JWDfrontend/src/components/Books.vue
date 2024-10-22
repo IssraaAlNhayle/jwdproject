@@ -12,21 +12,27 @@
             <h5 class="card-title">{{ book.title }}</h5>
             <p class="card-text">By {{ book.author }}</p>
             <a :href="book.bookpdf" class="btn btn-primary" target="_blank">Read PDF</a>
-            <button @click="handleButtonClick(book.id)" class="btn btn-primary">add to Reading</button>
+            <button @click="handleButtonClick(book.id)" class="btn btn-primary">Add to Reading</button>
             <!-- Heart icon for adding to favorites -->
-            <button @click="addToFavorites(book.id)" class="btn btn-favorite">
+            <button @click="AddBookToFavorites(book.id)" class="btn btn-favorite">
               <i class="fas fa-heart"></i>
             </button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Display Messages -->
+    <div v-if="messages.errorMessage" class="alert alert-danger">{{ messages.errorMessage }}</div>
+    <div v-if="messages.successMessage" class="alert alert-success">{{ messages.successMessage }}</div>
+
+    <User v-if="showLoginForm" @close="closeLoginForm" @switchToRegister="showRegistrationForm = true; showLoginForm = false"/>
+    <Registration v-if="showRegistrationForm" @close="showRegistrationForm= false"/>
   </div>
-  <User v-if="showLoginForm" @close="closeLoginForm" @switchToRegister="showRegistrationForm = true; showLoginForm = false"/>
-  <Registration v-if="showRegistrationForm" @close="showRegistrationForm= false"/>
 </template>
 
 <script>
+import { useMessagesStore } from '@/stores/useMessagesStore'; // Import the Pinia store
 import Registration from "@/components/Registration.vue";
 import User from "@/components/User.vue";
 
@@ -36,14 +42,19 @@ export default {
     return {
       showLoginForm: false,
       showRegistrationForm: false,
+      userLoggedIn: false // Added to track the login state
     };
   },
-  components: {User, Registration},
+  components: { User, Registration },
   props: {
     books: {
       type: Array,
       required: true
     }
+  },
+  setup() {
+    const messages = useMessagesStore(); // Initialize the Pinia store for messages
+    return { messages };
   },
   methods: {
     // API-based session check to verify if the session is still valid
@@ -57,6 +68,39 @@ export default {
       } catch (err) {
         console.error('Session validation failed:', err);
         return false;
+      }
+    },
+    async AddBookToFavorites(bookId) {
+      const loggedIn = await this.validateSession(); // Validate session with the backend
+      if (!loggedIn) {
+        this.openLoginForm(); // Show login form if not logged in
+      } else {
+        try {
+          const response = await fetch(`http://localhost:3000/add-to-favorites`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ bookId }) // Properly passing bookId
+          });
+
+          const data = await response.json(); // Parse response data
+
+          if (response.ok) {
+            this.messages.setSuccessMessage(data.message || 'Book added to favorites successfully!');
+          } else {
+            // Handle the case where the book is already in favorites
+            this.messages.setErrorMessage(data.message || 'Failed to add book to favorites list');
+          }
+
+          // Clear messages after 5 seconds
+          setTimeout(() => {
+            this.messages.clearMessages();
+          }, 5000);
+        } catch (err) {
+          this.messages.setErrorMessage(err.message);
+        }
       }
     },
     async handleButtonClick(bookId) {
@@ -97,6 +141,7 @@ export default {
   }
 }
 </script>
+
 <style scoped>
 .btn-favorite {
   background-color: transparent;

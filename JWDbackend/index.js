@@ -250,6 +250,7 @@ app.post('/add-to-reading', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+//route to add a book to the completed list
 app.post('/add-to-completed', async (req, res) => {
     const { bookId } = req.body;
     const userId = req.session.userId;
@@ -269,7 +270,7 @@ app.post('/add-to-completed', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-//route to get the books in the reading list
+//route to get the books in the completed list
 app.get('/completed-list', async (req, res) => {
     const userId = req.session.userId; // Get the logged-in user's ID from the session
     try {
@@ -286,6 +287,51 @@ app.get('/completed-list', async (req, res) => {
         res.status(200).json(result.rows);
     } catch (err) {
         console.error('Error fetching completed list:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+//route to add books to favorites
+app.post('/add-to-favorites', async (req, res) => {
+    const { bookId } = req.body;
+    const userId = req.session.userId;
+
+    try {
+        // Check if the book is already in the favorites list
+        const checkQuery = 'SELECT * FROM favorites WHERE users_id = $1 AND book_id = $2';
+        const checkResult = await pool.query(checkQuery, [userId, bookId]);
+
+        if (checkResult.rows.length > 0) {
+            return res.status(200).json({ message: 'Book is already in the favorites list' });
+        }
+
+        // If not, insert the book into 'favorites'
+        const insertQuery = 'INSERT INTO favorites (users_id, book_id) VALUES ($1, $2)';
+        await pool.query(insertQuery, [userId, bookId]);
+
+        res.status(200).json({ message: 'Book added to favorites list successfully' });
+    } catch (err) {
+        console.error('Error adding to favorites list:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+//route to get favorites books
+app.get('/favorites-list', async (req, res) => {
+    const userId = req.session.userId; // Get the logged-in user's ID from the session
+    try {
+        // Query to retrieve the books from the reading list of the logged-in user
+        const query = `
+            SELECT books.id, books.title, books.author, books.image, books.bookpdf
+            FROM favorites
+            JOIN books ON favorites.book_id = books.id
+            WHERE favorites.users_id = $1
+        `;
+        const result = await pool.query(query, [userId]);
+
+        // Return the list of books in the reading list
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Error fetching favorites list:', err);
         res.status(500).json({ message: 'Internal server error' });
     }
 });

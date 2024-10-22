@@ -4,9 +4,9 @@
       <div class="d-flex align-items-center">
         <h1 class="m-0">Bibliophilie</h1>
         <div class="ml-3">
-          <button @click="handleButtonClick('Completed')" class="btn btn-outline-primary mx-2">Completed</button>
           <button @click="handleButtonClick('Reading')" class="btn btn-outline-primary mx-2">Reading</button>
           <button @click="handleButtonClick('Favorites')" class="btn btn-outline-primary mx-2">Favorites</button>
+          <button @click="handleButtonClick('Completed')" class="btn btn-outline-primary mx-2">Completed</button>
         </div>
       </div>
       <button class="btn btn-outline-primary mx-2" @click="openLoginForm">Login</button>
@@ -67,6 +67,9 @@ else {
             this.$router.push('/completed-list');
 
             console.log(`${buttonName} button clicked, and user is logged in`);
+          }
+          else{
+            this.$router.push('/favorites-list');
           }
         }
 }

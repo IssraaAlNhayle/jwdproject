@@ -3,6 +3,7 @@ import Home from '../views/Home.vue'
 import BooksView from '../views/BooksView.vue';
 import ReadingView from '../views/ReadingView.vue';
 import CompletedView from '../views/CompletedView.vue';
+import FavoritesView from '../views/FavoritesView.vue';
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -27,6 +28,12 @@ const router = createRouter({
       path: '/completed-list', // New route for books based on genreId
       name: 'CompletedView',
       component: CompletedView,
+      props: true
+    },
+    {
+      path: '/favorites-list', // New route for books based on genreId
+      name: 'FavoritesView',
+      component: FavoritesView,
       props: true
     }
   ],
