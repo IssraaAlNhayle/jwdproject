@@ -1,5 +1,5 @@
 <template>
-  <div class="container-fluid mt-3">
+  <div class="container-fluid mt-3 content-wrapper">
     <div class="row gx-3 gy-3">
       <div
         v-for="genre in genres"
@@ -46,8 +46,25 @@ export default {
 </script>
 
 <style scoped>
+.content-wrapper {
+  padding-top: 5rem; /* Add padding as desired, e.g., 2rem or more */
+}
+.card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition */
+}
+
+.card:hover {
+  transform: scale(1.05); /* Slightly enlarge the card on hover */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Add a shadow effect */
+}
+
 .card-img-top {
   height: 200px;
   object-fit: cover;
+  transition: transform 0.3s ease; /* Add transition for smooth image effect */
+}
+
+.card-body {
+  transition: background-color 0.3s ease, color 0.3s ease; /* Transition for text and background */
 }
 </style>

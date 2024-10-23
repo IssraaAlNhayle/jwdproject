@@ -335,6 +335,29 @@ app.get('/favorites-list', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+// Route to remove a book from the user's favorites list
+app.delete('/remove-from-favorites/:bookId', async (req, res) => {
+    const { bookId } = req.params;  // Get the bookId from the request parameters
+    const userId = req.session.userId;  // Get the logged-in user's ID from the session
+
+    try {
+        // Delete the book from the favorites list
+        const deleteQuery = 'DELETE FROM favorites WHERE users_id = $1 AND book_id = $2';
+        const result = await pool.query(deleteQuery, [userId, bookId]);
+
+        if (result.rowCount > 0) {
+            // Book successfully removed from the favorites list
+            res.status(200).json({ message: 'Book removed from favorites successfully' });
+        } else {
+            // Book not found in the favorites list
+            res.status(404).json({ message: 'Book not found in the favorites list' });
+        }
+    } catch (err) {
+        console.error('Error removing from favorites list:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // Start the server
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

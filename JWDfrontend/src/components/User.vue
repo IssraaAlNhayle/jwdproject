@@ -1,6 +1,7 @@
 <template>
   <div class="login-modal">
     <div class="login-form">
+      <button class="close-btn" @click="$emit('close')">×</button>
       <h3>Login</h3>
       <form @submit.prevent="loginUser">
         <div class="form-group">
@@ -15,7 +16,6 @@
         <button type="submit" class="btn btn-primary">Login</button>
       </form>
       <p>Don't have an account? <a href="#" @click.prevent="$emit('switchToRegister')">Register here</a></p>
-      <button @click="$emit('close')" class="btn btn-secondary mt-3">Close</button>
     </div>
   </div>
 </template>
@@ -82,5 +82,20 @@ export default {
   padding: 20px;
   border-radius: 5px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  position: relative; /* Make the close button positionable */
+}
+.close-btn {
+  position: absolute;
+  top: -20px; /* Move the "X" higher above the form */
+  left: -10px; /* Move the "X" further to the left */
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 10px; /* Adds some padding around the "X" for click area */
+}
+
+.login-form h3 {
+  margin-top: 0px; /* Add space between the "X" and the heading */
 }
 </style>

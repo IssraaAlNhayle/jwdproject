@@ -11,6 +11,13 @@ export default defineConfig({
     vueDevTools(),
   ],
   server: {
+    fs: {
+      allow: [
+        // Allow access to Font Awesome webfonts in node_modules
+        '/Users/israanhayle/Desktop/jwdproject/node_modules/@fortawesome/fontawesome-free/webfonts',
+        '/Users/israanhayle/Desktop/jwdproject/JWDfrontend' // Include the project root directory
+      ]
+    },
     proxy: {
       // Proxy API requests to the backend (assuming backend is on localhost:5000)
       '/api': {

@@ -1,6 +1,8 @@
 <template>
   <div class="registration-modal">
     <div class="registration-form">
+      <!-- Close 'X' icon at the top left -->
+      <button class="close-btn" @click="$emit('close')">×</button>
       <h3>Register</h3>
       <form @submit.prevent="registerUser">
         <div class="form-group">
@@ -15,7 +17,6 @@
         <div v-if="successMessage" class="text-success">{{ successMessage }}</div>
         <button type="submit" class="btn btn-primary">Register</button>
       </form>
-      <button @click="$emit('close')" class="btn btn-secondary mt-3">Close</button>
     </div>
   </div>
 </template>
@@ -86,6 +87,21 @@ export default {
   padding: 20px;
   border-radius: 5px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  position: relative; /* Needed for absolute positioning of the close button */
 }
-</style>
+.close-btn {
+  position: absolute;
+  top: -20px; /* Align at the very top */
+  left: -10px; /* Align at the very left */
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 10px; /* Adds some padding around the "X" */
+}
 
+.registration-form h3 {
+  margin-top: 0px; /* Add space between the "X" and the heading, like in the login modal */
+}
+
+</style>

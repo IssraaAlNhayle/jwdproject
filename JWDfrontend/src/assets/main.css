@@ -26,12 +26,14 @@ a,
 /* Remove grid layout for large screens if it interferes with the Bootstrap layout */
 @media (min-width: 1024px) {
   body {
-    display: flex;
+    display: block;
     place-items: center;
   }
 
   #app {
-    display: block; /* Revert grid to block to prevent interference */
-    padding: 0 2rem;
+    max-width: 100%; /* This is fine */
+    margin: 0 auto;
+    padding: 0; /* Adjust padding as needed */
+    font-weight: normal;
   }
 }

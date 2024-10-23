@@ -1,11 +1,15 @@
 <template>
-  <div class="container mt-3">
+  <div class="container-fluid mt-3"> <!-- Updated to container-fluid for full width -->
     <h1>Your Reading List</h1>
+
+    <!-- Loading and Error/Success Messages -->
     <div v-if="loading">Loading...</div>
     <div v-if="messages.errorMessage" class="alert alert-danger">{{ messages.errorMessage }}</div>
     <div v-if="messages.successMessage" class="alert alert-success">{{ messages.successMessage }}</div>
+
+    <!-- Book Cards Grid -->
     <div v-if="!loading && !messages.errorMessage" class="row gx-3 gy-3">
-      <div v-for="book in books" :key="book.id" class="col-6 col-md-4 col-lg-3 col-xl-3">
+      <div v-for="book in books" :key="book.id" class="col-12 col-sm-6 col-md-4 col-lg-3"> <!-- Adjusted for better responsiveness -->
         <div class="card h-100">
           <img :src="book.image" class="card-img-top" :alt="book.title" />
           <div class="card-body">
@@ -14,7 +18,10 @@
             <a :href="book.bookpdf" class="btn btn-primary" target="_blank">Read PDF</a>
             <button class="btn btn-danger" @click="RemoveBookFromReading(book.id)">Remove from Reading</button>
             <button class="btn btn-success" @click="AddBookToCompleted(book.id)">Mark as Finished</button>
-            <button @click="AddBookToFavorites(book.id)" class="btn btn-favorite"><i class="fas fa-heart"></i></button>
+            <!-- Heart icon for adding to favorites -->
+            <button @click="AddBookToFavorites(book.id)" class="btn btn-favorite">
+              <font-awesome-icon :icon="isFavorite(book.id) ? ['fas', 'heart'] : ['far', 'heart']" />
+            </button>
           </div>
         </div>
       </div>
@@ -22,7 +29,9 @@
   </div>
 </template>
 
+
 <script>
+import { useFavoritesStore } from '@/stores/useFavoritesStore';
 import { useMessagesStore } from '@/stores/useMessagesStore'; // Adjust the path as necessary
 
 export default {
@@ -30,16 +39,22 @@ export default {
     return {
       books: [],
       loading: true,
+      favorites: [],
     };
   },
   setup() {
     const messages = useMessagesStore();
-    return { messages };
+    const favoritesStore = useFavoritesStore(); // Use the favorites store
+
+    // Fetch the favorites when the component mounts
+    favoritesStore.fetchFavorites();
+
+    return { messages, favoritesStore };
   },
   async created() {
     try {
       const response = await fetch('http://localhost:3000/reading-list', {
-        credentials: 'include', // Make sure session cookies are included
+        credentials: 'include', // Ensure session cookies are included
       });
       if (!response.ok) {
         throw new Error('Failed to fetch reading list');
@@ -53,6 +68,9 @@ export default {
     }
   },
   methods: {
+    isFavorite(bookId) {
+      return this.favoritesStore.isFavorite(bookId); // Use the store method
+    },
     async AddBookToCompleted(bookId) {
       try {
         const response = await fetch(`http://localhost:3000/add-to-completed`, {
@@ -67,11 +85,7 @@ export default {
           throw new Error('Failed to add book to completed list');
         }
 
-        // Explicitly update the `books` array to trigger Vue's reactivity system
         this.books = this.books.filter((book) => book.id !== bookId);
-        this.messages.setSuccessMessage('Book marked as finished successfully!');
-
-        // Clear success message after 5 seconds
         setTimeout(() => {
           this.messages.clearMessages();
         }, 5000);
@@ -90,18 +104,27 @@ export default {
           body: JSON.stringify({ bookId }),
         });
 
+        const responseData = await response.json(); // Parse the response once
+
         if (!response.ok) {
-          const errorData = await response.json(); // Get error details from the response
-          throw new Error(errorData.message || 'Failed to add book to favorites list');
+          throw new Error(responseData.message || 'Failed to add book to favorites list');
         }
 
-        // Book successfully added to favorites
-        const successData = await response.json(); // Get success data if needed
-        this.messages.setSuccessMessage(successData.message || 'Book added to favorites successfully!');
-        // Clear success message after 5 seconds
+        // Update the favorites array reactively, and avoid duplicates
+        if (!this.favorites.includes(bookId)) {
+          this.favorites = [...this.favorites, bookId]; // Ensure reactivity
+        }
+
+        console.log("Current favorites:", [...this.favorites]);
+        console.log("Is Favorite for book", bookId, this.isFavorite(bookId));
+        await this.favoritesStore.addBookToFavorites(bookId); // Use the store action
+        // Success message
+        this.messages.setSuccessMessage(responseData.message || 'Book added to favorites successfully!');
+
         setTimeout(() => {
           this.messages.clearMessages();
         }, 5000);
+
       } catch (err) {
         this.messages.setErrorMessage(err.message);
       }
@@ -116,11 +139,7 @@ export default {
           throw new Error('Failed to remove book from reading list');
         }
 
-        // Explicitly update the `books` array to trigger Vue's reactivity system
         this.books = this.books.filter((book) => book.id !== bookId);
-        this.messages.setSuccessMessage('Book removed from reading list successfully!');
-
-        // Clear success message after 5 seconds
         setTimeout(() => {
           this.messages.clearMessages();
         }, 5000);
@@ -133,6 +152,7 @@ export default {
 </script>
 
 <style scoped>
+/* Style the favorite heart button */
 .btn-favorite {
   background-color: transparent;
   border: none;
@@ -150,7 +170,18 @@ export default {
 }
 
 .card-img-top {
-  height: 200px;
-  object-fit: cover;
+  width: 100%;  /* Ensure the image takes up the full width of the card */
+  height: 250px;  /* Fixed height */
+  object-fit: cover;  /* Ensures the image fits within the dimensions */
+}
+
+
+/* Add spacing between grid items */
+.gx-3 {
+  gap: 1.5rem; /* Adjust gap between columns if needed */
+}
+
+.gy-3 {
+  gap: 1.5rem; /* Adjust gap between rows if needed */
 }
 </style>

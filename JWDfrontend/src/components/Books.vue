@@ -13,9 +13,10 @@
             <p class="card-text">By {{ book.author }}</p>
             <a :href="book.bookpdf" class="btn btn-primary" target="_blank">Read PDF</a>
             <button @click="handleButtonClick(book.id)" class="btn btn-primary">Add to Reading</button>
+
             <!-- Heart icon for adding to favorites -->
             <button @click="AddBookToFavorites(book.id)" class="btn btn-favorite">
-              <i class="fas fa-heart"></i>
+              <font-awesome-icon :icon="isFavorite(book.id) ? ['fas', 'heart'] : ['far', 'heart']" />
             </button>
           </div>
         </div>
@@ -31,10 +32,12 @@
   </div>
 </template>
 
+
 <script>
 import { useMessagesStore } from '@/stores/useMessagesStore'; // Import the Pinia store
 import Registration from "@/components/Registration.vue";
 import User from "@/components/User.vue";
+import { useFavoritesStore } from '@/stores/useFavoritesStore';
 
 export default {
   name: 'Books',
@@ -42,7 +45,8 @@ export default {
     return {
       showLoginForm: false,
       showRegistrationForm: false,
-      userLoggedIn: false // Added to track the login state
+      userLoggedIn: false, // Track the login state
+      favorites: [], // Track favorite books
     };
   },
   components: { User, Registration },
@@ -53,10 +57,20 @@ export default {
     }
   },
   setup() {
-    const messages = useMessagesStore(); // Initialize the Pinia store for messages
-    return { messages };
+    const messages = useMessagesStore();
+    const favoritesStore = useFavoritesStore(); // Use the favorites store
+
+    // Fetch the favorites when the component mounts
+    favoritesStore.fetchFavorites();
+
+    return { messages, favoritesStore };
   },
   methods: {
+    // Method to check if a book is in favorites
+    isFavorite(bookId) {
+      return this.favoritesStore.isFavorite(bookId); // Use the store method
+    },
+
     // API-based session check to verify if the session is still valid
     async validateSession() {
       try {
@@ -70,6 +84,8 @@ export default {
         return false;
       }
     },
+
+    // Method to add a book to favorites
     async AddBookToFavorites(bookId) {
       const loggedIn = await this.validateSession(); // Validate session with the backend
       if (!loggedIn) {
@@ -88,8 +104,16 @@ export default {
           const data = await response.json(); // Parse response data
 
           if (response.ok) {
+            // Update the favorites array reactively, and avoid duplicates
+            if (!this.favorites.includes(bookId)) {
+              this.favorites = [...this.favorites, bookId]; // Ensure reactivity
+            }
+
+            console.log("Current favorites:", [...this.favorites]);
+            console.log("Is Favorite for book", bookId, this.isFavorite(bookId));
             this.messages.setSuccessMessage(data.message || 'Book added to favorites successfully!');
           } else {
+            await this.favoritesStore.addBookToFavorites(bookId); // Use the store action
             // Handle the case where the book is already in favorites
             this.messages.setErrorMessage(data.message || 'Failed to add book to favorites list');
           }
@@ -103,6 +127,7 @@ export default {
         }
       }
     },
+
     async handleButtonClick(bookId) {
       const loggedIn = await this.validateSession(); // Validate session with the backend
       if (!loggedIn) {
@@ -128,6 +153,7 @@ export default {
         }
       }
     },
+
     openLoginForm() {
       this.showLoginForm = true;
     },
@@ -135,9 +161,22 @@ export default {
       this.showLoginForm = false;
     },
   },
+
   async mounted() {
     // Optionally check the session when the component mounts
     this.userLoggedIn = await this.validateSession();
+
+    // Fetch the favorites list when the component mounts
+    try {
+      const response = await fetch('http://localhost:3000/favorites-list', {
+        credentials: 'include',
+      });
+      const favoriteBooks = await response.json();
+      this.favorites = favoriteBooks.map(book => book.id); // Extract favorite book IDs
+      console.log("Fetched favorites: ", this.favorites);
+    } catch (err) {
+      console.error('Error fetching favorite books:', err);
+    }
   }
 }
 </script>
