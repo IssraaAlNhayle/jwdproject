@@ -28,18 +28,15 @@
     </div>
   </div>
 </template>
-
-
 <script>
 import { useFavoritesStore } from '@/stores/useFavoritesStore';
-import { useMessagesStore } from '@/stores/useMessagesStore'; // Adjust the path as necessary
+import { useMessagesStore } from '@/stores/useMessagesStore';
 
 export default {
   data() {
     return {
-      books: [],
+      books: [], // Store the reading list books
       loading: true,
-      favorites: [],
     };
   },
   setup() {
@@ -60,7 +57,7 @@ export default {
         throw new Error('Failed to fetch reading list');
       }
       const data = await response.json();
-      this.books = data;
+      this.books = data; // Set the books from the reading list
     } catch (err) {
       this.messages.setErrorMessage(err.message);
     } finally {
@@ -71,9 +68,10 @@ export default {
     isFavorite(bookId) {
       return this.favoritesStore.isFavorite(bookId); // Use the store method
     },
+
     async AddBookToCompleted(bookId) {
       try {
-        const response = await fetch(`http://localhost:3000/add-to-completed`, {
+        const response = await fetch('http://localhost:3000/add-to-completed', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -85,7 +83,9 @@ export default {
           throw new Error('Failed to add book to completed list');
         }
 
+        // Remove the book from the reading list
         this.books = this.books.filter((book) => book.id !== bookId);
+        this.messages.setSuccessMessage('Book marked as finished!');
         setTimeout(() => {
           this.messages.clearMessages();
         }, 5000);
@@ -93,42 +93,23 @@ export default {
         this.messages.setErrorMessage(err.message);
       }
     },
+
     async AddBookToFavorites(bookId) {
       try {
-        const response = await fetch(`http://localhost:3000/add-to-favorites`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ bookId }),
-        });
-
-        const responseData = await response.json(); // Parse the response once
-
-        if (!response.ok) {
-          throw new Error(responseData.message || 'Failed to add book to favorites list');
-        }
-
-        // Update the favorites array reactively, and avoid duplicates
-        if (!this.favorites.includes(bookId)) {
-          this.favorites = [...this.favorites, bookId]; // Ensure reactivity
-        }
-
-        console.log("Current favorites:", [...this.favorites]);
-        console.log("Is Favorite for book", bookId, this.isFavorite(bookId));
-        await this.favoritesStore.addBookToFavorites(bookId); // Use the store action
-        // Success message
-        this.messages.setSuccessMessage(responseData.message || 'Book added to favorites successfully!');
+        await this.favoritesStore.toggleFavorite(bookId); // Toggle favorite status in the store
+        const message = this.isFavorite(bookId)
+          ? 'Book added to favorites successfully!'
+          : 'Book removed from favorites successfully!';
+        this.messages.setSuccessMessage(message);
 
         setTimeout(() => {
           this.messages.clearMessages();
         }, 5000);
-
       } catch (err) {
         this.messages.setErrorMessage(err.message);
       }
     },
+
     async RemoveBookFromReading(bookId) {
       try {
         const response = await fetch(`http://localhost:3000/reading-list/${bookId}`, {
@@ -139,7 +120,9 @@ export default {
           throw new Error('Failed to remove book from reading list');
         }
 
+        // Remove the book from the reading list
         this.books = this.books.filter((book) => book.id !== bookId);
+        this.messages.setSuccessMessage('Book removed from reading list successfully!');
         setTimeout(() => {
           this.messages.clearMessages();
         }, 5000);
@@ -150,7 +133,6 @@ export default {
   },
 };
 </script>
-
 <style scoped>
 /* Style the favorite heart button */
 .btn-favorite {
@@ -174,7 +156,6 @@ export default {
   height: 250px;  /* Fixed height */
   object-fit: cover;  /* Ensures the image fits within the dimensions */
 }
-
 
 /* Add spacing between grid items */
 .gx-3 {

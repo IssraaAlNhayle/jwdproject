@@ -32,7 +32,6 @@
   </div>
 </template>
 
-
 <script>
 import { useMessagesStore } from '@/stores/useMessagesStore'; // Import the Pinia store
 import Registration from "@/components/Registration.vue";
@@ -46,7 +45,6 @@ export default {
       showLoginForm: false,
       showRegistrationForm: false,
       userLoggedIn: false, // Track the login state
-      favorites: [], // Track favorite books
     };
   },
   components: { User, Registration },
@@ -85,45 +83,27 @@ export default {
       }
     },
 
-    // Method to add a book to favorites
+    // Method to add or remove a book from favorites (toggle)
     async AddBookToFavorites(bookId) {
       const loggedIn = await this.validateSession(); // Validate session with the backend
       if (!loggedIn) {
         this.openLoginForm(); // Show login form if not logged in
       } else {
         try {
-          const response = await fetch(`http://localhost:3000/add-to-favorites`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify({ bookId }) // Properly passing bookId
-          });
-
-          const data = await response.json(); // Parse response data
-
-          if (response.ok) {
-            // Update the favorites array reactively, and avoid duplicates
-            if (!this.favorites.includes(bookId)) {
-              this.favorites = [...this.favorites, bookId]; // Ensure reactivity
-            }
-
-            console.log("Current favorites:", [...this.favorites]);
-            console.log("Is Favorite for book", bookId, this.isFavorite(bookId));
-            this.messages.setSuccessMessage(data.message || 'Book added to favorites successfully!');
-          } else {
-            await this.favoritesStore.addBookToFavorites(bookId); // Use the store action
-            // Handle the case where the book is already in favorites
-            this.messages.setErrorMessage(data.message || 'Failed to add book to favorites list');
-          }
+          // Toggle favorite status using the favorites store
+          await this.favoritesStore.toggleFavorite(bookId); // Use the store method to handle toggling
+          const message = this.isFavorite(bookId)
+            ? 'Book added to favorites successfully!'
+            : 'Book removed from favorites successfully!';
+          this.messages.setSuccessMessage(message);
 
           // Clear messages after 5 seconds
           setTimeout(() => {
             this.messages.clearMessages();
           }, 5000);
         } catch (err) {
-          this.messages.setErrorMessage(err.message);
+          this.messages.setErrorMessage('Error handling favorite operation');
+          console.error(err);
         }
       }
     },
@@ -157,6 +137,7 @@ export default {
     openLoginForm() {
       this.showLoginForm = true;
     },
+
     closeLoginForm() {
       this.showLoginForm = false;
     },
@@ -172,8 +153,8 @@ export default {
         credentials: 'include',
       });
       const favoriteBooks = await response.json();
-      this.favorites = favoriteBooks.map(book => book.id); // Extract favorite book IDs
-      console.log("Fetched favorites: ", this.favorites);
+      this.favoritesStore.favoriteBooks = favoriteBooks.map(book => book.id); // Set favorite book IDs in the store
+      console.log("Fetched favorites: ", this.favoritesStore.favoriteBooks);
     } catch (err) {
       console.error('Error fetching favorite books:', err);
     }

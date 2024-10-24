@@ -294,6 +294,9 @@ app.get('/completed-list', async (req, res) => {
 app.post('/add-to-favorites', async (req, res) => {
     const { bookId } = req.body;
     const userId = req.session.userId;
+    // Debugging logs
+    console.log("User ID from session:", req.session.userId);
+    console.log("Received bookId:", req.params.bookId);
 
     try {
         // Check if the book is already in the favorites list
@@ -335,21 +338,25 @@ app.get('/favorites-list', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-// Route to remove a book from the user's favorites list
 app.delete('/remove-from-favorites/:bookId', async (req, res) => {
-    const { bookId } = req.params;  // Get the bookId from the request parameters
-    const userId = req.session.userId;  // Get the logged-in user's ID from the session
+    const { bookId } = req.params;  // Corrected here
+    const userId = req.session.userId;
+
+    // Debugging logs
+    console.log("User ID from session:", userId);
+    console.log("Received bookId:", bookId);
+
+    if (!userId) {
+        return res.status(401).json({ message: 'User not logged in' });
+    }
 
     try {
-        // Delete the book from the favorites list
         const deleteQuery = 'DELETE FROM favorites WHERE users_id = $1 AND book_id = $2';
         const result = await pool.query(deleteQuery, [userId, bookId]);
 
         if (result.rowCount > 0) {
-            // Book successfully removed from the favorites list
             res.status(200).json({ message: 'Book removed from favorites successfully' });
         } else {
-            // Book not found in the favorites list
             res.status(404).json({ message: 'Book not found in the favorites list' });
         }
     } catch (err) {
@@ -357,6 +364,7 @@ app.delete('/remove-from-favorites/:bookId', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Start the server
 app.listen(port, () => {
