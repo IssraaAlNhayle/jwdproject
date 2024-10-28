@@ -1,10 +1,10 @@
-import './assets/main.css';
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import App from './App.vue';
-import router from './router';
-import axios from 'axios';
+// Main entry point for my frontend application
+import './assets/main.css'; // Import the main stylesheet for custom CSS styles
+import { createApp } from 'vue'; // Import Vue's createApp function to initialize the application
+import { createPinia } from 'pinia'; // // Importing Pinia, the state management library
+import 'bootstrap/dist/css/bootstrap.min.css'; // Importing the CSS framework Bootstrap
+import App from './App.vue'; // Import the main root component of the application
+import router from './router'; // Import the router configuration for handling routes within the app
 
 // FontAwesome imports
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -15,14 +15,11 @@ import { faHeart as farHeart } from '@fortawesome/free-regular-svg-icons';
 // Add FontAwesome icons to the library
 library.add(fasHeart, farHeart);
 
-// Create the Vue app
+// Create the main Vue application instance using the App component as the root
 const app = createApp(App);
 
 // Register the font-awesome-icon component globally
 app.component('font-awesome-icon', FontAwesomeIcon);
-
-// Configure global properties
-app.config.globalProperties.$axios = axios;
 
 // Use Pinia and Router
 app.use(createPinia());
