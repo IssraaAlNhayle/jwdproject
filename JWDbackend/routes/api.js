@@ -38,7 +38,7 @@ router.get('/books/:genreId', async (req, res) => {
     }
 });
 
-// Route to log an existing user in
+// Updated Login Route in API
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
@@ -54,7 +54,7 @@ router.post('/login', async (req, res) => {
 
             if (isMatch) {
                 req.session.userId = user.id;
-                return res.status(200).json({ message: 'Login successful' });
+                return res.status(200).json({ success: true, username: user.username });
             } else {
                 return res.status(401).json({ message: 'Username or password wrong' });
             }
@@ -122,6 +122,7 @@ router.get('/reading-list', async (req, res) => {
     }
 });
 
+
 // Route to remove a book from the reading list
 router.delete('/reading-list/:bookId', async (req, res) => {
     const { bookId } = req.params;  // Get the bookId from the request parameters
@@ -146,12 +147,21 @@ router.delete('/reading-list/:bookId', async (req, res) => {
     }
 });
 
-// Route to check the login status
-router.get('/session-check', (req, res) => {
-    if (req.session.userId) {
-        res.json({ loggedIn: true });
+// Route to check the login status and return the username
+router.get('/session-check', async (req, res) => {
+    const userId = req.session.userId; // Get the userId from the session
+    if (userId) {
+        try {
+            // Fetch username based on userId
+            const result = await pool.query('SELECT username FROM users WHERE id = $1', [userId]);
+            const username = result.rows.length > 0 ? result.rows[0].username : null;
+            res.json({ loggedIn: true, username }); // Return logged-in status and username
+        } catch (error) {
+            console.error('Error fetching username:', error);
+            res.status(500).json({ loggedIn: false, error: 'Internal server error' });
+        }
     } else {
-        res.json({ loggedIn: false });
+        res.json({ loggedIn: false }); // User is not logged in
     }
 });
 
@@ -165,16 +175,36 @@ router.post('/add-to-reading', async (req, res) => {
     }
 
     try {
-        const insertQuery = 'INSERT INTO reading (users_id, book_id) VALUES ($1, $2)';
-        await pool.query(insertQuery, [userId, bookId]);
-        res.status(200).json({ message: 'Book added to reading list successfully' });
+        // Check if the book is already in the reading list
+        const checkReadingQuery = 'SELECT * FROM reading WHERE users_id = $1 AND book_id = $2';
+        const checkReadingResult = await pool.query(checkReadingQuery, [userId, bookId]);
+
+        if (checkReadingResult.rows.length > 0) {
+            return res.status(400).json({ message: 'Book is already in the reading list' });
+        }
+
+        // Check if the book is in the completed list
+        const checkCompletedQuery = 'SELECT * FROM completed WHERE users_id = $1 AND book_id = $2';
+        const checkCompletedResult = await pool.query(checkCompletedQuery, [userId, bookId]);
+
+        if (checkCompletedResult.rows.length > 0) {
+            // If the book is in the completed list, delete it from there
+            const deleteCompletedQuery = 'DELETE FROM completed WHERE users_id = $1 AND book_id = $2';
+            await pool.query(deleteCompletedQuery, [userId, bookId]);
+        }
+
+        // Add the book to the reading list
+        const insertReadingQuery = 'INSERT INTO reading (users_id, book_id) VALUES ($1, $2)';
+        await pool.query(insertReadingQuery, [userId, bookId]);
+
+        res.status(200).json({ message: 'Book moved to reading list successfully' });
     } catch (err) {
         console.error('Error adding to reading list:', err);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
 
-// Route to add a book to the completed list
+// Route to add a book to the completed list and remove it from the reading list
 router.post('/add-to-completed', async (req, res) => {
     const { bookId } = req.body;
     const userId = req.session.userId;
@@ -184,14 +214,21 @@ router.post('/add-to-completed', async (req, res) => {
     }
 
     try {
+        // Insert the book into the completed list
         const insertQuery = 'INSERT INTO completed (users_id, book_id) VALUES ($1, $2)';
         await pool.query(insertQuery, [userId, bookId]);
-        res.status(200).json({ message: 'Book added to completed list successfully' });
+
+        // Remove the book from the reading list
+        const deleteQuery = 'DELETE FROM reading WHERE users_id = $1 AND book_id = $2';
+        await pool.query(deleteQuery, [userId, bookId]);
+
+        res.status(200).json({ message: 'Book moved to completed list successfully' });
     } catch (err) {
-        console.error('Error adding to completed list:', err);
+        console.error('Error moving book to completed list:', err);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Route to get the books in the completed list
 router.get('/completed-list', async (req, res) => {

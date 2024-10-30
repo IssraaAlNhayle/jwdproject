@@ -1,5 +1,10 @@
 <template>
   <div class="container-fluid mt-3">
+    <!-- Display Messages at the Top -->
+    <div v-if="messages.errorMessage" class="alert alert-danger">{{ messages.errorMessage }}</div>
+    <div v-if="messages.successMessage" class="alert alert-success">{{ messages.successMessage }}</div>
+
+    <!-- Book List -->
     <div class="row gx-3 gy-3">
       <div
         v-for="book in books"
@@ -12,7 +17,15 @@
             <h5 class="card-title">{{ book.title }}</h5>
             <p class="card-text">By {{ book.author }}</p>
             <a :href="book.bookpdf" class="btn btn-primary" target="_blank">Read PDF</a>
-            <button @click="handleButtonClick(book.id)" class="btn btn-primary">Add to Reading</button>
+            <button
+              @click="handleButtonClick(book.id)"
+              class="btn btn-primary"
+              :class="{ 'btn-success': state.readingStatus[book.id], 'btn-loading': state.loadingBookId === book.id }"
+              :disabled="state.loadingBookId === book.id"
+            >
+              <span v-if="state.loadingBookId === book.id">Adding...</span>
+              <span v-else>Add to Reading</span>
+            </button>
 
             <!-- Heart icon for adding to favorites -->
             <button @click="AddBookToFavorites(book.id)" class="btn btn-favorite">
@@ -23,31 +36,21 @@
       </div>
     </div>
 
-    <!-- Display Messages -->
-    <div v-if="messages.errorMessage" class="alert alert-danger">{{ messages.errorMessage }}</div>
-    <div v-if="messages.successMessage" class="alert alert-success">{{ messages.successMessage }}</div>
-
-    <User v-if="showLoginForm" @close="closeLoginForm" @switchToRegister="showRegistrationForm = true; showLoginForm = false"/>
-    <Registration v-if="showRegistrationForm" @close="showRegistrationForm= false"/>
+    <User v-if="state.showLoginForm" @close="closeLoginForm" @switchToRegister="state.showRegistrationForm = true; state.showLoginForm = false"/>
+    <Registration v-if="state.showRegistrationForm" @close="state.showRegistrationForm = false"/>
   </div>
 </template>
 
+
 <script>
-import { useMessagesStore } from '@/stores/useMessagesStore'; // Import the Pinia store
+import { reactive } from 'vue';
+import { useMessagesStore } from '@/stores/useMessagesStore';
 import Registration from "@/components/Registration.vue";
 import User from "@/components/User.vue";
 import { useFavoritesStore } from '@/stores/useFavoritesStore';
 
 export default {
   name: 'Books',
-  data() {
-    return {
-      showLoginForm: false,
-      showRegistrationForm: false,
-      userLoggedIn: false, // Track the login state
-    };
-  },
-  components: { User, Registration },
   props: {
     books: {
       type: Array,
@@ -56,110 +59,120 @@ export default {
   },
   setup() {
     const messages = useMessagesStore();
-    const favoritesStore = useFavoritesStore(); // Use the favorites store
+    const favoritesStore = useFavoritesStore();
 
-    // Fetch the favorites when the component mounts
-    favoritesStore.fetchFavorites();
+    // Initialize reactive state
+    const state = reactive({
+      showLoginForm: false,
+      showRegistrationForm: false,
+      userLoggedIn: false,
+      loadingBookId: null, // Track which book is being added to the reading list
+      readingStatus: {} // Track reading status for each book
+    });
 
-    return { messages, favoritesStore };
-  },
-  methods: {
-    // Method to check if a book is in favorites
-    isFavorite(bookId) {
-      return this.favoritesStore.isFavorite(bookId); // Use the store method
-    },
-
-    // API-based session check to verify if the session is still valid
-    async validateSession() {
+    // Function to validate session
+    async function validateSession() {
       try {
         const response = await fetch('http://localhost:3000/session-check', {
-          credentials: 'include', // Ensure cookies are sent with the request
+          credentials: 'include',
         });
         const result = await response.json();
-        return result.loggedIn; // Expecting a { loggedIn: true/false } response from the server
+        return result.loggedIn;
       } catch (err) {
         console.error('Session validation failed:', err);
         return false;
       }
-    },
+    }
+    async function handleButtonClick(bookId) {
+      const loggedIn = await validateSession();
+      if (!loggedIn) {
+        state.showLoginForm = true;
+        return;
+      }
+
+      if (state.readingStatus[bookId]) {
+        messages.setErrorMessage("This book is already in your reading list.");
+        clearMessageAfterDelay(bookId);
+        return;
+      }
+
+      state.loadingBookId = bookId;
+      try {
+        const response = await fetch('http://localhost:3000/add-to-reading', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ bookId })
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+          state.readingStatus[bookId] = true;
+          clearMessageAfterDelay(bookId);
+        } else if (response.status === 400 && result.message === "Book is already in the reading list") {
+          messages.setErrorMessage(result.message);
+          clearMessageAfterDelay(bookId);
+        } else {
+          messages.setErrorMessage("Error adding book to reading list.");
+          clearMessageAfterDelay(bookId);
+        }
+      } catch (err) {
+        console.error("Request failed:", err);
+        messages.setErrorMessage("Error adding book to reading list.");
+        clearMessageAfterDelay(bookId);
+      } finally {
+        state.loadingBookId = null;
+      }
+    }
+
+    // Method to check if a book is in favorites
+    function isFavorite(bookId) {
+      return favoritesStore.isFavorite(bookId);
+    }
+   // Helper function to clear messages and reset reading status after a delay
+    function clearMessageAfterDelay(bookId) {
+      setTimeout(() => {
+        messages.clearMessages();
+        if (bookId) {
+          state.readingStatus[bookId] = false; // Reset the reading status after delay
+        }
+      }, 2000); // Adjust the delay as needed
+    }
 
     // Method to add or remove a book from favorites (toggle)
-    async AddBookToFavorites(bookId) {
-      const loggedIn = await this.validateSession(); // Validate session with the backend
+    async function AddBookToFavorites(bookId) {
+      const loggedIn = await validateSession();
       if (!loggedIn) {
-        this.openLoginForm(); // Show login form if not logged in
+        state.showLoginForm = true;
       } else {
         try {
-          // Toggle favorite status using the favorites store
-          await this.favoritesStore.toggleFavorite(bookId); // Use the store method to handle toggling
-          const message = this.isFavorite(bookId)
-            ? 'Book added to favorites successfully!'
-            : 'Book removed from favorites successfully!';
-          this.messages.setSuccessMessage(message);
+          await favoritesStore.toggleFavorite(bookId);
 
-          // Clear messages after 5 seconds
           setTimeout(() => {
-            this.messages.clearMessages();
+            messages.clearMessages();
           }, 5000);
         } catch (err) {
-          this.messages.setErrorMessage('Error handling favorite operation');
+          messages.setErrorMessage('Error handling favorite operation');
           console.error(err);
         }
       }
-    },
-
-    async handleButtonClick(bookId) {
-      const loggedIn = await this.validateSession(); // Validate session with the backend
-      if (!loggedIn) {
-        this.openLoginForm(); // Show login form if not logged in
-      } else {
-        // Proceed with adding the book to the user's reading list
-        try {
-          const response = await fetch('http://localhost:3000/add-to-reading', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include', // Ensure cookies are sent with the request
-            body: JSON.stringify({ bookId }) // Send the book ID to the backend
-          });
-
-          const result = await response.json();
-          if (response.ok) {
-            console.log('Book added to reading list:', result.message);
-          } else {
-            console.error('Error adding book to reading list:', result.message);
-          }
-        } catch (err) {
-          console.error('Request failed:', err);
-        }
-      }
-    },
-
-    openLoginForm() {
-      this.showLoginForm = true;
-    },
-
-    closeLoginForm() {
-      this.showLoginForm = false;
-    },
-  },
-
-  async mounted() {
-    // Optionally check the session when the component mounts
-    this.userLoggedIn = await this.validateSession();
-
-    // Fetch the favorites list when the component mounts
-    try {
-      const response = await fetch('http://localhost:3000/favorites-list', {
-        credentials: 'include',
-      });
-      const favoriteBooks = await response.json();
-      this.favoritesStore.favoriteBooks = favoriteBooks.map(book => book.id); // Set favorite book IDs in the store
-      console.log("Fetched favorites: ", this.favoritesStore.favoriteBooks);
-    } catch (err) {
-      console.error('Error fetching favorite books:', err);
     }
-  }
-}
+    // Function to close login form
+    function closeLoginForm() {
+      state.showLoginForm = false;
+    }
+
+    return {
+      state,
+      messages,
+      handleButtonClick,
+      AddBookToFavorites,
+      isFavorite,
+      closeLoginForm
+    };
+  },
+  components: { User, Registration }
+};
 </script>
 
 <style scoped>
@@ -182,5 +195,15 @@ export default {
 .card-img-top {
   height: 200px;
   object-fit: cover;
+}
+
+.btn-success {
+  background-color: green;
+  color: white;
+}
+
+.btn-loading {
+  background-color: orange;
+  color: white;
 }
 </style>

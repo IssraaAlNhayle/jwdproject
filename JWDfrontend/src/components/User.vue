@@ -50,6 +50,7 @@ export default {
 
         if (response.ok) {
           console.log('Login successful');  // Log success message
+          this.$emit('loggedIn');  // Emit a custom event on successful login
           this.$emit('close');  // Close the login form on success
         } else {
           console.log('Login failed:', result.message);  // Log failure message
