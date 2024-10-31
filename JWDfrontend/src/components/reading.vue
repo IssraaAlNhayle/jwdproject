@@ -1,16 +1,15 @@
 <template>
-  <div class="container-fluid mt-3"> <!-- Updated to container-fluid for full width -->
+  <div class="container-fluid mt-3">
     <h1>Your Reading List</h1>
-
     <!-- Loading and Error/Success Messages -->
     <div v-if="loading">Loading...</div>
     <div v-if="messages.errorMessage" class="alert alert-danger">{{ messages.errorMessage }}</div>
     <div v-if="messages.successMessage" class="alert alert-success">{{ messages.successMessage }}</div>
 
     <!-- Book Cards Grid -->
-    <div v-if="!loading && !messages.errorMessage" class="row gx-3 gy-3">
-      <div v-for="book in books" :key="book.id" class="col-12 col-sm-6 col-md-4 col-lg-3"> <!-- Adjusted for better responsiveness -->
-        <div class="card h-100">
+    <div v-if="!loading && !messages.errorMessage" class="row gx-2 gy-2">
+      <div v-for="book in books" :key="book.id" class="col-12 col-sm-6 col-md-3 col-lg-3">
+      <div class="card h-100">
           <img :src="book.image" class="card-img-top" :alt="book.title" />
           <div class="card-body">
             <h5 class="card-title">{{ book.title }}</h5>
@@ -18,7 +17,6 @@
             <a :href="book.bookpdf" class="btn btn-primary" target="_blank">Read PDF</a>
             <button class="btn btn-danger" @click="RemoveBookFromReading(book.id)">Remove from Reading</button>
             <button class="btn btn-success" @click="AddBookToCompleted(book.id)">Mark as Finished</button>
-            <!-- Heart icon for adding to favorites -->
             <button @click="AddBookToFavorites(book.id)" class="btn btn-favorite">
               <font-awesome-icon :icon="isFavorite(book.id) ? ['fas', 'heart'] : ['far', 'heart']" />
             </button>
@@ -28,6 +26,7 @@
     </div>
   </div>
 </template>
+
 <script>
 import { useFavoritesStore } from '@/stores/useFavoritesStore';
 import { useMessagesStore } from '@/stores/useMessagesStore';
@@ -133,6 +132,7 @@ export default {
   },
 };
 </script>
+
 <style scoped>
 /* Style the favorite heart button */
 .btn-favorite {
