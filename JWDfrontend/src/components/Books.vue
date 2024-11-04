@@ -23,6 +23,7 @@
               :class="{ 'btn-success': state.readingStatus[book.id], 'btn-loading': state.loadingBookId === book.id }"
               :disabled="state.loadingBookId === book.id"
             >
+              <span v-if="state.loadingBookId === book.id">Adding...</span>
               <span v-else>Add to Reading</span>
             </button>
             <!-- Heart icon for adding to favorites -->
