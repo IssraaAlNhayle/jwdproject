@@ -4,7 +4,7 @@
     <div v-if="messages.errorMessage" class="alert alert-danger">{{ messages.errorMessage }}</div>
     <div v-if="messages.successMessage" class="alert alert-success">{{ messages.successMessage }}</div>
 
-    <!-- Book List -->
+    <!-- Book Cards Grid -->
     <div class="row gx-3 gy-3">
       <div
         v-for="book in books"
@@ -23,21 +23,19 @@
               :class="{ 'btn-success': state.readingStatus[book.id], 'btn-loading': state.loadingBookId === book.id }"
               :disabled="state.loadingBookId === book.id"
             >
-              <span v-if="state.loadingBookId === book.id">Adding...</span>
               <span v-else>Add to Reading</span>
             </button>
-
             <!-- Heart icon for adding to favorites -->
             <button @click="AddBookToFavorites(book.id)" class="btn btn-favorite">
-              <font-awesome-icon :icon="isFavorite(book.id) ? ['fas', 'heart'] : ['far', 'heart']" />
+              <font-awesome-icon :icon="isFavorite(book.id) ? ['fas', 'heart'] : ['far', 'heart']" /> <!-- Favorite icon changes based on status -->
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <User v-if="state.showLoginForm" @close="closeLoginForm" @switchToRegister="state.showRegistrationForm = true; state.showLoginForm = false"/>
-    <Registration v-if="state.showRegistrationForm" @close="state.showRegistrationForm = false"/>
+    <User v-if="state.showLoginForm" @close="closeLoginForm" @switchToRegister="state.showRegistrationForm = true; state.showLoginForm = false"/> <!-- User login form -->
+    <Registration v-if="state.showRegistrationForm" @close="state.showRegistrationForm = false"/> <!-- Registration form -->
   </div>
 </template>
 
@@ -50,22 +48,22 @@ import User from "@/components/User.vue";
 import { useFavoritesStore } from '@/stores/useFavoritesStore';
 
 export default {
-  name: 'Books',
+  name: 'Books', // Component name
   props: {
     books: {
-      type: Array,
-      required: true
+      type: Array, // Expecting an array of books as a prop
+      required: true // Prop is required
     }
   },
   setup() {
-    const messages = useMessagesStore();
-    const favoritesStore = useFavoritesStore();
+    const messages = useMessagesStore(); // Access messages store
+    const favoritesStore = useFavoritesStore(); // Access favorites store
 
     // Initialize reactive state
     const state = reactive({
-      showLoginForm: false,
-      showRegistrationForm: false,
-      userLoggedIn: false,
+      showLoginForm: false, // Control display of the login form
+      showRegistrationForm: false, // Control display of the registration form
+      userLoggedIn: false, // Track user login status
       loadingBookId: null, // Track which book is being added to the reading list
       readingStatus: {} // Track reading status for each book
     });
@@ -171,7 +169,7 @@ export default {
       closeLoginForm
     };
   },
-  components: { User, Registration }
+  components: { User, Registration } // Register child components
 };
 </script>
 

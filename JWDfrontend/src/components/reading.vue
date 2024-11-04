@@ -18,7 +18,7 @@
             <button class="btn btn-danger" @click="RemoveBookFromReading(book.id)">Remove from Reading</button>
             <button class="btn btn-success" @click="AddBookToCompleted(book.id)">Mark as Finished</button>
             <button @click="AddBookToFavorites(book.id)" class="btn btn-favorite">
-              <font-awesome-icon :icon="isFavorite(book.id) ? ['fas', 'heart'] : ['far', 'heart']" />
+              <font-awesome-icon :icon="isFavorite(book.id) ? ['fas', 'heart'] : ['far', 'heart']" />  <!-- Favorite icon changes based on status -->
             </button>
           </div>
         </div>
@@ -28,8 +28,8 @@
 </template>
 
 <script>
-import { useFavoritesStore } from '@/stores/useFavoritesStore';
-import { useMessagesStore } from '@/stores/useMessagesStore';
+import { useFavoritesStore } from '@/stores/useFavoritesStore'; // Import favorites store for managing favorite books
+import { useMessagesStore } from '@/stores/useMessagesStore'; // Import messages store for handling user messages
 
 export default {
   data() {
@@ -157,12 +157,4 @@ export default {
   object-fit: cover;  /* Ensures the image fits within the dimensions */
 }
 
-/* Add spacing between grid items */
-.gx-3 {
-  gap: 1.5rem; /* Adjust gap between columns if needed */
-}
-
-.gy-3 {
-  gap: 1.5rem; /* Adjust gap between rows if needed */
-}
 </style>

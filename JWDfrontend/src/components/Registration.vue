@@ -52,7 +52,7 @@ export default {
           // Successful registration
           this.successMessage = 'Registration successful!';
           this.error = null;
-          // Optionally, clear input fields after successful registration
+          // clear input fields after successful registration
           this.username = '';
           this.password = '';
           this.$emit('close'); // Emit 'close' event to the parent component to close the modal
