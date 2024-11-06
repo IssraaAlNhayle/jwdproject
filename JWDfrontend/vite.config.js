@@ -14,8 +14,9 @@ export default defineConfig({
     fs: {
       allow: [
         // Allow access to Font Awesome webfonts in node_modules
+        '/Users/israanhayle/Desktop/jwdproject',
         '/Users/israanhayle/Desktop/jwdproject/node_modules/@fortawesome/fontawesome-free/webfonts',
-        '/Users/israanhayle/Desktop/jwdproject/JWDfrontend' // Include the project root directory
+        '/Users/israanhayle/Desktop/jwdproject/JWDfrontend'
       ]
     },
     proxy: {
