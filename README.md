@@ -19,6 +19,8 @@ cd jwdproject/JWDbackend
 npm install
 
 npm start
+
+To set up the database, please refer to the full documentation.
 ### Frontend Setup
 cd jwdproject/JWDfrontend
 

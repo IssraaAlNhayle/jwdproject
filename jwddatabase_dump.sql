@@ -100,14 +100,3 @@ CREATE TABLE completed (
     FOREIGN KEY (users_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
 );
-
-Drop table reading;
-Drop table completed;
-Drop table favorites;
-Drop table users;
-Drop table books;
-Drop table genres;
-
-Delete from genres;
-Delete from users;
-select * from users;
